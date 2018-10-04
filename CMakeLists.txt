@@ -54,7 +54,7 @@ message(STATUS "found Qt5Core=${Qt5Core_VERSION_STRING}, Qt5Gui=${Qt5Gui_VERSION
 message(STATUS "Qt5Core=${Qt5Core_DIR}, Qt5=${Qt5Gui_DIR}")
 
 find_package(YAML       MODULE REQUIRED)
-find_package(Cerf       1.8 MODULE)
+find_package(Cerf       1.9 REQUIRED CONFIG)
 find_package(LMFit      1.8 MODULE)
 
 message(DEBUG " -- LibYaml_FOUND=${LibYaml_FOUND}")
