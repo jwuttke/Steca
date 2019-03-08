@@ -12,6 +12,7 @@
 //
 //  ***********************************************************************************************
 
+#include "qcr/base/debug.h" // CSTRI, ASSERT
 #include <regex>
 #include <iostream>
 #include <QString>
@@ -30,7 +31,7 @@ bool parseCommandLine(const QString& line, QString& command, QString& context)
 {
     const std::regex my_regex("^(\\[\\s*((\\d+)ms)?\\s*(\\w+)\\s\\w{3}\\])?([^#]*)(#.*)?$");
     std::smatch my_match;
-    const std::string tmpLine { line.toLatin1().constData() };
+    const std::string tmpLine { CSTRI(line) };
     if (!std::regex_match(tmpLine, my_match, my_regex))
         return false;
     if (my_match.size()!=7) {
@@ -50,7 +51,6 @@ bool parseCommandLine(const QString& line, QString& command, QString& context)
 #include "qcr/engine/mixin.h"
 #include "qcr/base/qcrexception.h"
 #include "qcr/base/string_ops.h"
-#include "qcr/base/debug.h" // ASSERT
 #include <QApplication>
 #include <QFile>
 
@@ -100,25 +100,19 @@ QString CommandRegistry::learn(const QString& name, QcrCommandable* widget)
             idxEntry = ++(numberedEntry->second);
         ret.replace("#", QString::number(idxEntry));
     }
-    if (widgets_.find(ret)!=widgets_.end()) {
-        QByteArray tmp = ret.toLatin1();
-        qFatal("Duplicate widget registry entry '%s'", tmp.constData());
-    }
+    if (widgets_.find(ret)!=widgets_.end())
+        qFatal("Duplicate widget registry entry '%s'", CSTRI(ret));
     widgets_[ret] = widget;
     return ret;
 }
 
 void CommandRegistry::forget(const QString& name)
 {
-    // qterr << "Registry " << name_ << "(" << widgets_.size() << ") forgets '"  << name << "'\n";
-    // qterr.flush();
+    qDebug() << "Registry " << name_ << "(" << widgets_.size() << ") forgets '"  << name << "'";
     auto it = widgets_.find(name);
-    if (it==widgets_.end()) {
-        QByteArray tmp1 = name.toLatin1();
-        QByteArray tmp2 = name_.toLatin1();
+    if (it==widgets_.end())
         qFatal("Cannot deregister, there is no entry '%s' in the widget registry '%s'",
-               tmp1.constData(), tmp2.constData());
-    }
+               CSTRI(name), CSTRI(name_));
     widgets_.erase(it);
 }
 
@@ -145,11 +139,11 @@ Console::Console(const QString& logFileName)
     gConsole = this;
 
 #ifdef Q_OS_WIN
-    notifier_ = new QWinEventNotifier;// GetStdHandle(STD_INPUT_HANDLE));
-    QObject::connect(notifier_, &QWinEventNotifier::activated, [this](HANDLE){ readCLI(); });
+    auto* notifier = new QWinEventNotifier;// GetStdHandle(STD_INPUT_HANDLE));
+    QObject::connect(notifier, &QWinEventNotifier::activated, [this](HANDLE){ readCLI(); });
 #else
-    notifier_ = new QSocketNotifier{fileno(stdin), QSocketNotifier::Read};
-    QObject::connect(notifier_, &QSocketNotifier::activated, [this](int){ readCLI(); });
+    auto* notifier = new QSocketNotifier{fileno(stdin), QSocketNotifier::Read};
+    QObject::connect(notifier, &QSocketNotifier::activated, [this](int){ readCLI(); });
 #endif
 
     // start registry
@@ -198,14 +192,10 @@ QString Console::learn(const QString& nameArg, QcrCommandable* widget)
     QString name = nameArg;
     if (name[0]=='@') {
         QStringList args = name.split(' ');
-        if (args[0]!="@push") {
-            QByteArray tmp = name.toLatin1();
-            qFatal("invalid @ command in learn(%s)", tmp.constData());
-        }
-        if (args.size()<2) {
-            QByteArray tmp = name.toLatin1();
-            qFatal("@push has no argument in learn(%s)", tmp.constData());
-        }
+        if (args[0]!="@push")
+            qFatal("invalid @ command in learn(%s)", CSTRI(name));
+        if (args.size()<2)
+            qFatal("@push has no argument in learn(%s)", CSTRI(name));
         name = args[1];
         registryStack_.push(new CommandRegistry{name});
         qDebug() << "pushed registry " << registryStack_.top()->name();
@@ -236,6 +226,7 @@ void Console::runScript(const QString& fName)
         return;
     }
     QTextStream in(&file);
+    std::deque<QString> commandLifo;
     while (!in.atEnd()) {
         QString line = in.readLine();
         if (line[0]=='[') {
@@ -246,45 +237,43 @@ void Console::runScript(const QString& fName)
             }
             line = line.mid(i+1);
         }
-        commandLifo_.push_back(line);
+        commandLifo.push_back(line);
     }
-    commandsFromStack();
-    log("# done with script '" + fName + "'");
-}
 
-//! Pops the current registry away, so that the previous one is reinstated.
-
-//! Called by ~QcrModal(), i.e. on terminating a modal dialog.
-void Console::closeModalDialog()
-{
-    log(registryStack_.top()->name() + " close");
-    if (registryStack_.empty())
-        qFatal("BUG: cannot pop: registry stack is empty");
-    qDebug() << "going to pop registry " << registryStack_.top()->name();
-    delete registryStack_.top();
-    registryStack_.pop();
-    qDebug() << "top registry is now " << registryStack_.top()->name();
-}
-
-//! Executes commands on stack. Called by runScript and by QcrModalDialog/QcrFileDialog::exec.
-void Console::commandsFromStack()
-{
-    while (!commandLifo_.empty()) {
-        const QString line = commandLifo_.front();
+    while (!commandLifo.empty()) {
+        const QString line = commandLifo.front();
         qDebug() << "/from stack '" << line;
-        commandLifo_.pop_front();
+        commandLifo.pop_front();
         try {
             commandInContext(line, "fil");
         } catch (const QcrException&ex) {
             qterr << ex.msg() << "\n";
             qterr.flush();
-            commandLifo_.clear();
+            commandLifo.clear();
             log("# ERROR: " + ex.msg());
             log("# Emptied command stack upon error");
             break;
         }
         qDebug() << "from stack/ '" << line << "'\n";
     }
+    log("# done with script '" + fName + "'");
+}
+
+//! Pops the current registry away, so that the previous one is reinstated.
+
+//! Called by ~QcrModal(), i.e. on terminating a modal dialog.
+void Console::closeModalDialog(const QString& name)
+{
+    if (name != registryStack_.top()->name())
+        qFatal("invalid request to close registry %s while %s is on top",
+               CSTRI(name), CSTRI(registryStack_.top()->name()));
+    log(name + " close");
+    if (registryStack_.empty())
+        qFatal("BUG: cannot pop: registry stack is empty");
+    qDebug() << "going to pop registry " << name;
+    delete registryStack_.top();
+    registryStack_.pop();
+    qDebug() << "top registry is now " << name;
 }
 
 //! Writes line to log file, decorated with information on context and timing.

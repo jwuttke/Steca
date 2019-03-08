@@ -28,7 +28,7 @@ QcrModal::QcrModal(const QString& name)
 QcrModal::~QcrModal()
 {
     gConsole->forget(name());
-    gConsole->closeModalDialog();
+    gConsole->closeModalDialog(name());
 }
 
 
@@ -70,6 +70,7 @@ QcrFileDialog::QcrFileDialog(
                 if (result()==Accepted)
                     postprocess(this->selectedFiles());
                 qDebug() << "FileDialog calling /close";
+                gConsole->closeModalDialog(name());
                 close();
                 qDebug() << "FileDialog calling close/";
             });

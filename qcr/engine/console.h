@@ -44,20 +44,14 @@ public:
 
     void startingGui();
     void runScript(const QString& fName);
-    void closeModalDialog();
+    void closeModalDialog(const QString& name);
     void commandsFromStack();
 
     void log(const QString&) const;
 private:
     QString caller_;
     QDateTime startTime_;
-#ifdef Q_OS_WIN
-    class QWinEventNotifier *notifier_;
-#else
-    class QSocketNotifier *notifier_;
-#endif
     std::stack<class CommandRegistry*> registryStack_;
-    std::deque<QString> commandLifo_;
     mutable int computingTime_ {0}; //!< Accumulated computing time in ms.
     mutable QTextStream log_;
 
