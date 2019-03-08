@@ -91,14 +91,12 @@ QString DialogfieldPath::stem() const
 //  ***********************************************************************************************
 
 DialogSave::DialogSave(
-    QWidget* _parent, const QString& _name, const QString& _title, const QStringList& _extensions)
-    : QcrModalDialog{_parent, _name}
+    QWidget* _parent, const QString& _name, const QString& caption, const QStringList& _extensions)
+    : QcrModalDialog{_parent, caption}
 {
     // Dialog widget settings
 
-    setModal(true);
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
-    setWindowTitle(_title);
     progressBar.hide();
 
     // Subwidgets
