@@ -283,8 +283,7 @@ void Console::commandsFromStack()
             commandLifo_.clear();
             log("# Emptied command stack upon error");
             return;
-        } else if (ret==Result::suspend)
-            return;
+        }
     }
 }
 
@@ -354,19 +353,11 @@ Console::Result Console::wrappedCommand(const QString& line)
     QString cmd, arg;
     strOp::splitOnce(command, cmd, arg);
     qterr << "DEBUG: wrapped command: '" << line << "'\n";
-    if (cmd[0]=='@') {
-        if (cmd=="@ls") {
-            const CommandRegistry* reg = registryStack_.top();
-            qterr << "registry " << reg->name() << " has " << reg->size() << " commands:\n";
-            reg->dump(qterr);
-            qterr.flush();
-        } else if (cmd=="@close") {
-            log(command);
-            return Result::suspend;
-        } else {
-            qterr << "@ command " << cmd << " not known\n"; qterr.flush();
-            return Result::err;
-        }
+    if (cmd=="@ls") {
+        const CommandRegistry* reg = registryStack_.top();
+        qterr << "registry " << reg->name() << " has " << reg->size() << " commands:\n";
+        reg->dump(qterr);
+        qterr.flush();
         return Result::ok;
     }
     QcrCommandable* w = registry().find(cmd);
