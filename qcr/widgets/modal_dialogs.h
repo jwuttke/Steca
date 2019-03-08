@@ -29,7 +29,6 @@ protected:
 class QcrModalDialog : protected QcrModal, public QDialog {
 public:
     QcrModalDialog(QWidget* parent, const QString& caption);
-    int exec() override; // overrides QDialog::exec()
     void setFromCommand(const QString&) override;
 };
 

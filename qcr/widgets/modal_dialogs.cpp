@@ -40,17 +40,8 @@ QcrModalDialog::QcrModalDialog(QWidget* parent, const QString& caption)
     , QDialog {parent}
 {
     setWindowTitle(caption);
-}
-
-int QcrModalDialog::exec()
-{
-    if (gConsole->hasCommandsOnStack()) {
-        open();
-        gConsole->commandsFromStack();
-        close();
-        return QDialog::Accepted;
-    } else
-        return QDialog::exec();
+    setAttribute(Qt::WA_DeleteOnClose, true);
+    open();
 }
 
 void QcrModalDialog::setFromCommand(const QString& arg)
