@@ -48,14 +48,8 @@ public:
     void commandsFromStack();
 
     void log(const QString&) const;
-    bool hasCommandsOnStack() const;
 private:
     QString caller_;
-    enum class Result : int //!< Used to inform commandsFromStack how to proceed
-    { ok,                   //!< Proceed with next command from stack
-      err,                  //!< Terminate stack execution
-      suspend               //!< Suspend stack execution
-    };
     QDateTime startTime_;
 #ifdef Q_OS_WIN
     class QWinEventNotifier *notifier_;
@@ -69,8 +63,8 @@ private:
 
     class CommandRegistry& registry() const { return *registryStack_.top(); }
     void readCLI();
-    Result commandInContext(const QString& command, const QString& caller);
-    Result wrappedCommand(const QString& command);
+    void commandInContext(const QString& command, const QString& caller);
+    void wrappedCommand(const QString& command);
 };
 
 #endif // CONSOLE_H

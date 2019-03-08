@@ -259,10 +259,8 @@ void Console::runScript(const QString& fName)
 void Console::closeModalDialog()
 {
     log(registryStack_.top()->name() + " close");
-    if (registryStack_.empty()) {
-        qterr << "cannot pop: registry stack is empty\n"; qterr.flush();
-        return;
-    }
+    if (registryStack_.empty())
+        qFatal("BUG: cannot pop: registry stack is empty");
     // qterr << "going to pop registry " << registryStack_.top()->name() << "\n"; qterr.flush();
     delete registryStack_.top();
     registryStack_.pop();
@@ -277,12 +275,15 @@ void Console::commandsFromStack()
         qterr << "DEBUG: command from stack: '" << line << "'\n";
         commandLifo_.pop_front();
         if (line=="@close")
-            return;
-        Result ret = commandInContext(line, "fil");
-        if (ret==Result::err) {
+            break;
+        try {
+            commandInContext(line, "fil");
+        } catch (const QcrException&ex) {
+            qterr << ex.msg() << "\n";
+            qterr.flush();
             commandLifo_.clear();
             log("# Emptied command stack upon error");
-            return;
+            break;
         }
     }
 }
@@ -305,16 +306,11 @@ void Console::log(const QString& lineArg) const
     prefix += " " + registry().name() + " " + caller_ + "] ";
     log_ << prefix << line << "\n";
     log_.flush();
+    // also write to terminal
     if (line.indexOf("##")!=0) {
         qterr << line << "\n";
         qterr.flush();
     }
-}
-
-//! Returns true if there are commands on stack. Needed by modal dialogs.
-bool Console::hasCommandsOnStack() const
-{
-    return !commandLifo_.empty();
 }
 
 //! Reads one line from the command-line interface, and executes it.
@@ -323,17 +319,21 @@ void Console::readCLI()
     QTextStream qtin(stdin);
     QString line = qtin.readLine();
     qterr << "DEBUG: readCLI: " << line << "\n";
-    commandInContext(line, "cli");
+    try {
+        commandInContext(line, "cli");
+    } catch (const QcrException&ex) {
+        qterr << ex.msg() << "\n";
+        qterr.flush();
+    }
 }
 
 //! Delegates command execution to wrappedCommand, with context set to caller argument.
-Console::Result Console::commandInContext(const QString& line, const QString& caller)
+void Console::commandInContext(const QString& line, const QString& caller)
 {
     qterr << "DEBUG: command in context: '" << line << "', caller=" << caller << "\n";
     caller_ = caller;
-    Result ret = wrappedCommand(line);
+    wrappedCommand(line);
     caller_ = "gui"; // restores default
-    return ret;
 }
 
 //! Executes command. Always called from commandInContext(..).
@@ -341,15 +341,13 @@ Console::Result Console::commandInContext(const QString& line, const QString& ca
 //! Commands are either console commands (starting with '@'), or widget commands.
 //! Widget commands start with the name of widget that has been registered by learn(..);
 //! further execution is delegated to the pertinent widget.
-Console::Result Console::wrappedCommand(const QString& line)
+void Console::wrappedCommand(const QString& line)
 {
     QString command, context;
-    if (!parseCommandLine(line, command, context)) {
-        qterr << "command line '" << line << "' could not be parsed\n"; qterr.flush();
-        return Result::err;
-    }
+    if (!parseCommandLine(line, command, context))
+        throw QcrException{"Command line '"+line+"' could not be parsed"};
     if (command=="")
-        return Result::ok; // nothing to do
+        return;
     QString cmd, arg;
     strOp::splitOnce(command, cmd, arg);
     qterr << "DEBUG: wrapped command: '" << line << "'\n";
@@ -358,20 +356,16 @@ Console::Result Console::wrappedCommand(const QString& line)
         qterr << "registry " << reg->name() << " has " << reg->size() << " commands:\n";
         reg->dump(qterr);
         qterr.flush();
-        return Result::ok;
+        return;
     }
     QcrCommandable* w = registry().find(cmd);
-    if (!w) {
-        qterr << "Command '" << cmd << "' not found\n"; qterr.flush();
-        return Result::err;
-    }
+    if (!w)
+        throw QcrException{"Command '"+cmd+"' not found"};
     try {
         w->setFromCommand(arg); // execute command
-        return Result::ok;
     } catch (const QcrException&ex) {
-        qterr << "Command '" << command << "' failed:\n" << ex.msg() << "\n"; qterr.flush();
+        throw QcrException{"Command '"+cmd+"' failed: "+ex.msg()};
     }
-    return Result::err;
 }
 
 #endif // LOCAL_CODE_ONLY
