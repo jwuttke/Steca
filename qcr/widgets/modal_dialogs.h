@@ -39,7 +39,6 @@ public:
     QcrFileDialog(QWidget* parent, const QString& caption, const QString& directory,
                   const QString& filter, std::function<void(const QStringList)> postprocess);
     ~QcrFileDialog();
-    int exec() override; // overrides QFileDialog::exec()
     void setFromCommand(const QString&) override;
 };
 

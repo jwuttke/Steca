@@ -56,7 +56,7 @@ int QcrModalDialog::exec()
 void QcrModalDialog::setFromCommand(const QString& arg)
 {
     if (arg=="")
-        throw QcrException("Empty argument in Dialog command");
+        throw QcrException{"Empty argument in Dialog command"};
     if (arg=="close") {
         accept();
         return;
@@ -86,24 +86,19 @@ QcrFileDialog::~QcrFileDialog()
     gConsole->log("fdia select "+selectedFiles().join(';'));
 }
 
-int QcrFileDialog::exec()
-{
-    qFatal("call to obsolete QcrFileDialog::exec");
-}
-
 void QcrFileDialog::setFromCommand(const QString& arg)
 {
     if (arg=="")
-        throw QcrException("Empty argument in FileDialog command");
+        throw QcrException{"Empty argument in FileDialog command"};
     if (arg=="close") {
         accept();
         return;
     }
     QStringList args = arg.split(' ');
     if (args[0]!="select")
-        throw QcrException("Unexpected filedialog command");
+        throw QcrException{"Unexpected filedialog command"};
     if (args.size()<2)
-        throw QcrException("Missing argument to command 'select'");
+        throw QcrException{"Missing argument to command 'select'"};
     QStringList list = args[1].split(';');
     QString tmp = '"' + list.join("\" \"") + '"';
     selectFile(tmp);

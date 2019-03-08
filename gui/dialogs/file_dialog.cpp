@@ -73,10 +73,8 @@ public:
     FileDialog(QWidget*, const QString&, QDir&, const QString& filter,
                std::function<void(const QStringList)> postprocess);
     /*
-    QStringList getFiles();
-    QString getFile();
 private:
-    QDir& dir_;
+    QDir& dir_; = QFileInfo(ret.at(0)).absolutePath();
     */
 };
 
@@ -89,24 +87,6 @@ FileDialog::FileDialog(QWidget* parent, const QString& caption, QDir& dir, const
     setViewMode(QFileDialog::Detail);
     setConfirmOverwrite(false);
 }
-
-/*
-QStringList FileDialog::getFiles()
-{
-    QStringList ret = selectedFiles();
-    if (!ret.isEmpty())
-        dir_ = QFileInfo(ret.at(0)).absolutePath();
-    return ret;
-}
-
-QString FileDialog::getFile()
-{
-    QStringList files = getFiles();
-    if (files.isEmpty())
-        return "";
-    return files.first();
-}
-*/
 
 } // namespace
 
@@ -175,10 +155,10 @@ void queryExportFileName(
     QWidget* parent, const QString& caption, QDir& dir, const QString& filter,
     std::function<void(const QStringList)> postprocess)
 {
-    FileDialog dlg{parent, caption, dir, filter, postprocess};
-    dlg.setFileMode(QFileDialog::AnyFile);
-    dlg.setAcceptMode(QFileDialog::AcceptSave);
-    dlg.open();
+    auto* dlg = new FileDialog{parent, caption, dir, filter, postprocess};
+    dlg->setFileMode(QFileDialog::AnyFile);
+    dlg->setAcceptMode(QFileDialog::AcceptSave);
+    dlg->open();
 }
 
 //! Runs dialog that prompts for a directory. Returns absolute directory path. May change dir.
