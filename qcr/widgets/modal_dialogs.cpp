@@ -65,11 +65,14 @@ QcrFileDialog::QcrFileDialog(
     , QFileDialog{parent, caption, directory, filter}
 {
     setAttribute(Qt::WA_DeleteOnClose, true);
-    connect(this, &QcrFileDialog::finished,
+    connect(this, &QcrFileDialog::finished, this,
             [this,postprocess](){
                 if (result()==Accepted)
                     postprocess(this->selectedFiles());
-                close();});
+                qDebug() << "FileDialog calling /close";
+                close();
+                qDebug() << "FileDialog calling close/";
+            });
 }
 
 QcrFileDialog::~QcrFileDialog()
@@ -82,7 +85,7 @@ void QcrFileDialog::setFromCommand(const QString& arg)
     if (arg=="")
         throw QcrException{"Empty argument in FileDialog command"};
     if (arg=="close") {
-        accept();
+        accept(); // will emit signal finished(), which triggers postprocess and close
         return;
     }
     QStringList args = arg.split(' ');

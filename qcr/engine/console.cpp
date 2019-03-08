@@ -146,10 +146,10 @@ Console::Console(const QString& logFileName)
 
 #ifdef Q_OS_WIN
     notifier_ = new QWinEventNotifier;// GetStdHandle(STD_INPUT_HANDLE));
-    QObject::connect(notifier_, &QWinEventNotifier::activated, [this] (HANDLE) {readCLI(); });
+    QObject::connect(notifier_, &QWinEventNotifier::activated, [this](HANDLE){ readCLI(); });
 #else
     notifier_ = new QSocketNotifier{fileno(stdin), QSocketNotifier::Read};
-    QObject::connect(notifier_, &QSocketNotifier::activated, [this](int) { readCLI(); });
+    QObject::connect(notifier_, &QSocketNotifier::activated, [this](int){ readCLI(); });
 #endif
 
     // start registry
@@ -208,8 +208,7 @@ QString Console::learn(const QString& nameArg, QcrCommandable* widget)
         }
         name = args[1];
         registryStack_.push(new CommandRegistry{name});
-        // qterr << "pushed registry " << registryStack_.top()->name() << "\n";
-        // qterr.flush();
+        qDebug() << "pushed registry " << registryStack_.top()->name();
     }
     return registry().learn(name, widget);
 }
@@ -217,7 +216,7 @@ QString Console::learn(const QString& nameArg, QcrCommandable* widget)
 //! Unregisters a QcrCommandable.
 void Console::forget(const QString& name)
 {
-    // qterr << "DEBUG: forget " << name << "\n";
+    qDebug() << "forget " << name;
     registry().forget(name);
 }
 
@@ -261,10 +260,10 @@ void Console::closeModalDialog()
     log(registryStack_.top()->name() + " close");
     if (registryStack_.empty())
         qFatal("BUG: cannot pop: registry stack is empty");
-    // qterr << "going to pop registry " << registryStack_.top()->name() << "\n"; qterr.flush();
+    qDebug() << "going to pop registry " << registryStack_.top()->name();
     delete registryStack_.top();
     registryStack_.pop();
-    // qterr << "top registry is now " << registryStack_.top()->name() << "\n"; qterr.flush();
+    qDebug() << "top registry is now " << registryStack_.top()->name();
 }
 
 //! Executes commands on stack. Called by runScript and by QcrModalDialog/QcrFileDialog::exec.
@@ -272,19 +271,19 @@ void Console::commandsFromStack()
 {
     while (!commandLifo_.empty()) {
         const QString line = commandLifo_.front();
-        qterr << "DEBUG: command from stack: '" << line << "'\n";
+        qDebug() << "/from stack '" << line;
         commandLifo_.pop_front();
-        if (line=="@close")
-            break;
         try {
             commandInContext(line, "fil");
         } catch (const QcrException&ex) {
             qterr << ex.msg() << "\n";
             qterr.flush();
             commandLifo_.clear();
+            log("# ERROR: " + ex.msg());
             log("# Emptied command stack upon error");
             break;
         }
+        qDebug() << "from stack/ '" << line << "'\n";
     }
 }
 
@@ -306,11 +305,10 @@ void Console::log(const QString& lineArg) const
     prefix += " " + registry().name() + " " + caller_ + "] ";
     log_ << prefix << line << "\n";
     log_.flush();
-    // also write to terminal
-    if (line.indexOf("##")!=0) {
-        qterr << line << "\n";
-        qterr.flush();
-    }
+    // also write to terminal ?
+    if (line.indexOf("##")==0)
+        return; // this line has already been written to terminal by our messageHandler
+    qterr << line << "\n"; qterr.flush();
 }
 
 //! Reads one line from the command-line interface, and executes it.
@@ -318,7 +316,7 @@ void Console::readCLI()
 {
     QTextStream qtin(stdin);
     QString line = qtin.readLine();
-    qterr << "DEBUG: readCLI: " << line << "\n";
+    qDebug() << "readCLI: " << line;
     try {
         commandInContext(line, "cli");
     } catch (const QcrException&ex) {
@@ -330,10 +328,11 @@ void Console::readCLI()
 //! Delegates command execution to wrappedCommand, with context set to caller argument.
 void Console::commandInContext(const QString& line, const QString& caller)
 {
-    qterr << "DEBUG: command in context: '" << line << "', caller=" << caller << "\n";
+    qDebug() << "/in context '" << line << "', caller=" << caller;
     caller_ = caller;
     wrappedCommand(line);
     caller_ = "gui"; // restores default
+    qDebug() << "in context/ '" << line << "', caller=" << caller;
 }
 
 //! Executes command. Always called from commandInContext(..).
@@ -350,7 +349,7 @@ void Console::wrappedCommand(const QString& line)
         return;
     QString cmd, arg;
     strOp::splitOnce(command, cmd, arg);
-    qterr << "DEBUG: wrapped command: '" << line << "'\n";
+    qDebug() << "/wrapped '" << line;
     if (cmd=="@ls") {
         const CommandRegistry* reg = registryStack_.top();
         qterr << "registry " << reg->name() << " has " << reg->size() << " commands:\n";
@@ -366,6 +365,7 @@ void Console::wrappedCommand(const QString& line)
     } catch (const QcrException&ex) {
         throw QcrException{"Command '"+cmd+"' failed: "+ex.msg()};
     }
+    qDebug() << "wrapped/ '" << line << "'";
 }
 
 #endif // LOCAL_CODE_ONLY

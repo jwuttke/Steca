@@ -31,15 +31,16 @@ void loadData::addFiles(QWidget* parent)
     file_dialog::queryImportFileNames(
         parent, "Add files", dataDir_, dataFormats, true,
         [](QStringList fileNames){
-            qDebug() << "DEBUG loadData::addFiles postprocess" << fileNames;
+            qDebug() << "DEBUG loadData::addFiles /postprocess" << fileNames;
             if (fileNames.isEmpty())
                 return;
-            TakesLongTime __("addFiles");
+            TakesLongTime __{"addFiles"};
             try {
                 gSession->dataset.addGivenFiles(fileNames);
             } catch (const Exception& ex) {
                 qWarning() << ex.msg();
             }
+            qDebug() << "DEBUG loadData::addFiles postprocess/" << fileNames;
         });
 }
 
