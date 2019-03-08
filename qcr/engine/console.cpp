@@ -258,7 +258,7 @@ void Console::runScript(const QString& fName)
 //! Called by ~QcrModal(), i.e. on terminating a modal dialog.
 void Console::closeModalDialog()
 {
-    log("@close # modal dialog");
+    log(registryStack_.top()->name() + " close");
     if (registryStack_.empty()) {
         qterr << "cannot pop: registry stack is empty\n"; qterr.flush();
         return;
@@ -273,8 +273,8 @@ void Console::closeModalDialog()
 void Console::commandsFromStack()
 {
     while (!commandLifo_.empty()) {
-        const QString& line = commandLifo_.front();
-        qterr << "DEBUG: command from stack: " << line << "\n";
+        const QString line = commandLifo_.front();
+        qterr << "DEBUG: command from stack: '" << line << "'\n";
         commandLifo_.pop_front();
         if (line=="@close")
             return;
@@ -323,12 +323,14 @@ void Console::readCLI()
 {
     QTextStream qtin(stdin);
     QString line = qtin.readLine();
+    qterr << "DEBUG: readCLI: " << line << "\n";
     commandInContext(line, "cli");
 }
 
 //! Delegates command execution to wrappedCommand, with context set to caller argument.
 Console::Result Console::commandInContext(const QString& line, const QString& caller)
 {
+    qterr << "DEBUG: command in context: '" << line << "', caller=" << caller << "\n";
     caller_ = caller;
     Result ret = wrappedCommand(line);
     caller_ = "gui"; // restores default
@@ -351,7 +353,7 @@ Console::Result Console::wrappedCommand(const QString& line)
         return Result::ok; // nothing to do
     QString cmd, arg;
     strOp::splitOnce(command, cmd, arg);
-    qterr << "DEBUG: wrapped command: " << command << "\n";
+    qterr << "DEBUG: wrapped command: '" << line << "'\n";
     if (cmd[0]=='@') {
         if (cmd=="@ls") {
             const CommandRegistry* reg = registryStack_.top();

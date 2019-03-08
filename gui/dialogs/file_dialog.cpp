@@ -70,22 +70,27 @@ QVariant OpenFileProxyModel::data(const QModelIndex& idx, int role) const
 
 class FileDialog : public QcrFileDialog {
 public:
-    FileDialog(QWidget*, const QString&, QDir&, const QString& filter = QString());
+    FileDialog(QWidget*, const QString&, QDir&, const QString& filter,
+               std::function<void(const QStringList)> postprocess);
+    /*
     QStringList getFiles();
     QString getFile();
 private:
     QDir& dir_;
+    */
 };
 
-FileDialog::FileDialog(QWidget* parent, const QString& caption, QDir& dir, const QString &filter)
-    : QcrFileDialog(parent, caption, dir.absolutePath(), filter)
-    , dir_(dir)
+FileDialog::FileDialog(QWidget* parent, const QString& caption, QDir& dir, const QString &filter,
+                       std::function<void(const QStringList)> postprocess)
+    : QcrFileDialog(parent, caption, dir.absolutePath(), filter, postprocess)
+/*    , dir_(dir) */
 {
     setOption(QFileDialog::DontUseNativeDialog);
     setViewMode(QFileDialog::Detail);
     setConfirmOverwrite(false);
 }
 
+/*
 QStringList FileDialog::getFiles()
 {
     QStringList ret = selectedFiles();
@@ -101,6 +106,7 @@ QString FileDialog::getFile()
         return "";
     return files.first();
 }
+*/
 
 } // namespace
 
@@ -152,52 +158,39 @@ QFile* openFileConfirmOverwrite(const QString& name, QWidget* parent, const QStr
 }
 
 //! Runs dialog that prompts for input files. Returns list of absolute paths. May change dir.
-QStringList queryImportFileNames(
-    QWidget* parent, const QString& caption, QDir& dir, const QString& filter, bool plural)
+void queryImportFileNames(
+    QWidget* parent, const QString& caption, QDir& dir, const QString& filter, bool plural,
+    std::function<void(const QStringList)> postprocess)
 {
-    FileDialog dlg(parent, caption, dir, filter);
-    dlg.setAcceptMode(QFileDialog::AcceptOpen);
-    dlg.setReadOnly(true);
-    dlg.setProxyModel(new OpenFileProxyModel);
-    dlg.setFileMode(plural ? QFileDialog::ExistingFiles : QFileDialog::ExistingFile);
-    if (!dlg.exec())
-        return {};
-    return dlg.getFiles();
-}
-
-//! Runs dialog that prompts for one input file. Returns absolute path. May change dir.
-QString queryImportFileName(
-    QWidget* parent, const QString& caption, QDir& dir, const QString& filter)
-{
-    QStringList fileNames = queryImportFileNames(parent, caption, dir, filter, false);
-    if (fileNames.isEmpty())
-        return "";
-    return fileNames.first();
+    auto* dlg = new FileDialog(parent, caption, dir, filter, postprocess);
+    dlg->setAcceptMode(QFileDialog::AcceptOpen);
+    dlg->setReadOnly(true);
+    dlg->setProxyModel(new OpenFileProxyModel);
+    dlg->setFileMode(plural ? QFileDialog::ExistingFiles : QFileDialog::ExistingFile);
+    dlg->open();
 }
 
 //! Runs dialog that prompts for one output file. Returns absolute path. May change dir.
-QString queryExportFileName(
-    QWidget* parent, const QString& caption, QDir& dir, const QString& filter)
+void queryExportFileName(
+    QWidget* parent, const QString& caption, QDir& dir, const QString& filter,
+    std::function<void(const QStringList)> postprocess)
 {
-    FileDialog dlg{parent, caption, dir, filter};
+    FileDialog dlg{parent, caption, dir, filter, postprocess};
     dlg.setFileMode(QFileDialog::AnyFile);
     dlg.setAcceptMode(QFileDialog::AcceptSave);
-    if (!dlg.exec())
-        return "";
-    return dlg.getFile();
+    dlg.open();
 }
 
 //! Runs dialog that prompts for a directory. Returns absolute directory path. May change dir.
 // TODO return value VS dir ???
-QString queryDirectory(QWidget* parent, const QString& caption, const QString& dirname)
+void queryDirectory(QWidget* parent, const QString& caption, const QString& dirname,
+                       std::function<void(const QStringList)> postprocess)
 {
     QDir dir(dirname);
-    FileDialog dlg{parent, caption, dir};
+    FileDialog dlg{parent, caption, dir, "", postprocess};
     dlg.setFileMode(QFileDialog::Directory);
     dlg.setAcceptMode(QFileDialog::AcceptSave);
-    if (!dlg.exec())
-        return "";
-    return dlg.getFile();
+    dlg.open();
 }
 
 } // namespace file_dialog

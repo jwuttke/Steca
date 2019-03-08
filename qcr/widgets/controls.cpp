@@ -51,9 +51,9 @@ void QcrSpinBox::initSpinBox(int ndigits, bool withDot, int min, int max, const 
         setToolTip(tooltip);
     ASSERT(min<=cell_->val() && cell_->val()<=max);
     doSetValue(cell_->val());
-    QSpinBox::connect(this, &QSpinBox::editingFinished, [this]() {
+    connect(this, &QSpinBox::editingFinished, [this]() {
             onChangedValue(value()); });
-    QSpinBox::connect(this, _SLOT_(QSpinBox,valueChanged,int), [this](int val)->void {
+    connect(this, _SLOT_(QSpinBox,valueChanged,int), [this](int val)->void {
             if(!hasFocus())
                 onChangedValue(val); });
 }
@@ -93,9 +93,9 @@ void QcrDoubleSpinBox::initDoubleSpinBox(
         setToolTip(tooltip);
     ASSERT(min<=cell_->val() && cell_->val()<=max);
     doSetValue(cell_->val());
-    QSpinBox::connect(this, &QDoubleSpinBox::editingFinished, [this]() {
+    connect(this, &QDoubleSpinBox::editingFinished, [this]() {
             onChangedValue(value()); });
-    QSpinBox::connect(this, _SLOT_(QDoubleSpinBox,valueChanged,double), [this](double val)->void {
+    connect(this, _SLOT_(QDoubleSpinBox,valueChanged,double), [this](double val)->void {
             if(!hasFocus())
                 onChangedValue(val); });
 }
@@ -120,7 +120,7 @@ QcrCheckBox::QcrCheckBox(const QString& _name, const QString& text, QcrCell<bool
     , QCheckBox{text}
 {
     doSetValue(cell_->val());
-    QCheckBox::connect(this, _SLOT_(QCheckBox,stateChanged,int), [this](int val)->void {
+    connect(this, _SLOT_(QCheckBox,stateChanged,int), [this](int val)->void {
             onChangedValue((bool)val); });
 }
 
@@ -133,7 +133,7 @@ QcrRadioButton::QcrRadioButton(const QString& _name, const QString& text, bool v
 {
     doSetValue(cell_->val());
     setAutoExclusive(false); // TODO provide int-valued Qcr wrapper for exclusive radio buttons
-    QRadioButton::connect(this, _SLOT_(QRadioButton,toggled,bool), [this,_name](bool val)->void {
+    connect(this, _SLOT_(QRadioButton,toggled,bool), [this,_name](bool val)->void {
             onChangedValue(val); });
 }
 
@@ -143,7 +143,7 @@ QcrRadioButton::QcrRadioButton(const QString& _name, const QString& text, QcrCel
 {
     doSetValue(cell_->val());
     setAutoExclusive(false);
-    QRadioButton::connect(this, _SLOT_(QRadioButton,toggled,bool), [this](bool val)->void {
+    connect(this, _SLOT_(QRadioButton,toggled,bool), [this](bool val)->void {
             onChangedValue(val); });
 }
 
@@ -161,7 +161,7 @@ QcrComboBox::QcrComboBox(
 {
     QComboBox::addItems(tags_);
     doSetValue(cell_->val());
-    QComboBox::connect(this, _SLOT_(QComboBox,currentIndexChanged,int), [this](int val)->void {
+    connect(this, _SLOT_(QComboBox,currentIndexChanged,int), [this](int val)->void {
             if (!spuriousCall_)
                 onChangedValue(val, itemText(val)); });
 }
@@ -212,7 +212,7 @@ QcrRadioBox::QcrRadioBox(
         _layout->addWidget(rb);
         group_.addButton(rb, i);
         rb->setChecked(i==cell_->val());
-        QRadioButton::connect(rb, _SLOT_(QRadioButton,toggled,bool),
+        connect(rb, _SLOT_(QRadioButton,toggled,bool),
                 [this,i](bool val)->void { if (val) onChangedValue(i); });
     }
     setLayout(_layout);
@@ -240,10 +240,10 @@ QcrLineEdit::QcrLineEdit(const QString& _name, const QString& val)
     // therefore we must use another criterion to distinuish user actions from other calls.
     // The following works, but has the drawback that a user action is logged not only as such,
     // but also in a second line as if there were an indirect call.
-    QLineEdit::connect(this, _SLOT_(QLineEdit,textEdited,const QString&),
+    connect(this, _SLOT_(QLineEdit,textEdited,const QString&),
             [this](const QString& val)->void {
                 onChangedValue(val); });
-    QLineEdit::connect(this, _SLOT_(QLineEdit,textChanged,const QString&),
+    connect(this, _SLOT_(QLineEdit,textChanged,const QString&),
             [this](const QString& val)->void {
         onChangedValue(val); });
 }
@@ -263,7 +263,7 @@ QcrTabWidget::QcrTabWidget(const QString& _name)
     : QcrSingleValue<int> {_name, 0}
 {
     doSetValue(cell_->val());
-    QTabWidget::connect(this, &QTabWidget::currentChanged, [this](int val) {
+    connect(this, &QTabWidget::currentChanged, [this](int val) {
             if (spuriousCall_)
                 return;
             onChangedValue(val, tabText(val)); });

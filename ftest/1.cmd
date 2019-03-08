@@ -32,8 +32,8 @@
 [   41ms main ini] intenAvg on
 [   39ms main ini] intenScale 1
 [        main gui] addFiles
-[        fdia gui] fdia select in/m280580.dat
-[        fdia gui] @close
+[        fdia gui] fdia select /home/jwu/AA15/m280580.dat
+[        fdia gui] fdia close
 [    9ms main gui] ## Long time task began:  "addFiles"
 [  402ms main gui] ## Long time task ended:  "addFiles"
 [        main gui] setupTabs 2 # Peakfits

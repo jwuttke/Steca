@@ -68,10 +68,18 @@ void QcrModalDialog::setFromCommand(const QString& arg)
 //! @class QcrFileDialog
 
 QcrFileDialog::QcrFileDialog(
-    QWidget* parent, const QString& caption, const QString& directory, const QString& filter)
+    QWidget* parent, const QString& caption, const QString& directory, const QString& filter,
+    std::function<void(const QStringList)> postprocess)
     : QcrModal{"fdia"}
     , QFileDialog{parent, caption, directory, filter}
-{}
+{
+    setAttribute(Qt::WA_DeleteOnClose, true);
+    connect(this, &QcrFileDialog::finished,
+            [this,postprocess](){
+                if (result()==Accepted)
+                    postprocess(this->selectedFiles());
+                close();});
+}
 
 QcrFileDialog::~QcrFileDialog()
 {
@@ -80,13 +88,7 @@ QcrFileDialog::~QcrFileDialog()
 
 int QcrFileDialog::exec()
 {
-    if (gConsole->hasCommandsOnStack()) {
-        open();
-        gConsole->commandsFromStack();
-        close();
-        return QDialog::Accepted;
-    } else
-        return QDialog::exec();
+    qFatal("call to obsolete QcrFileDialog::exec");
 }
 
 void QcrFileDialog::setFromCommand(const QString& arg)

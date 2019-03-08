@@ -65,9 +65,9 @@ DialogfieldPath::DialogfieldPath(QcrModalDialog* _parent)
     auto* browseBtn = new QcrTextTriggerButton{"selectDir", "Browse..."};
     browseBtn->trigger()->setTriggerHook(
         [this]() {
-            dirEdit->setCellValue(
-                file_dialog::queryDirectory(
-                    parent, "Select folder", dirEdit->text())); });
+            file_dialog::queryDirectory(
+                parent, "Select folder", dirEdit->text(),
+                [=](const QStringList blabla) { dirEdit->setCellValue(blabla.first()); }); });
 
     auto* grid = new QGridLayout;
     grid->addWidget(new QLabel{"Save to folder:"}, 0, 0, Qt::AlignRight);

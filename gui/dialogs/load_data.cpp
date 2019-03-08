@@ -28,32 +28,36 @@ const QString dataFormats {"Data files (*.dat *.yaml *.mar*);;All files (*.*)"};
 
 void loadData::addFiles(QWidget* parent)
 {
-    QStringList fileNames
-        = file_dialog::queryImportFileNames(parent, "Add files", dataDir_, dataFormats);
-    // gGui->repaint();
-    if (fileNames.isEmpty())
-        return;
-    TakesLongTime __("addFiles");
-    try {
-        gSession->dataset.addGivenFiles(fileNames);
-    } catch (const Exception& ex) {
-        qWarning() << ex.msg();
-    }
+    file_dialog::queryImportFileNames(
+        parent, "Add files", dataDir_, dataFormats, true,
+        [](QStringList fileNames){
+            qDebug() << "DEBUG loadData::addFiles postprocess" << fileNames;
+            if (fileNames.isEmpty())
+                return;
+            TakesLongTime __("addFiles");
+            try {
+                gSession->dataset.addGivenFiles(fileNames);
+            } catch (const Exception& ex) {
+                qWarning() << ex.msg();
+            }
+        });
 }
 
 void loadData::loadCorrFile(QWidget* parent)
 {
     if (gSession->corrset.hasFile()) {
         gSession->corrset.removeFile();
-    } else {
-        QString fileName = file_dialog::queryImportFileName(
-            parent, "Set correction file", dataDir_, dataFormats);
-        if (fileName.isEmpty())
-            return;
-        try {
-            gSession->corrset.loadFile(fileName);
-        } catch (const Exception& ex) {
-            qWarning() << ex.msg();
-        }
+        return;
     }
+    file_dialog::queryImportFileNames(
+        parent, "Set correction file", dataDir_, dataFormats, false,
+        [](QStringList fileNames){
+            if (fileNames.isEmpty())
+                return;
+            try {
+                gSession->corrset.loadFile(fileNames.first());
+            } catch (const Exception& ex) {
+                qWarning() << ex.msg();
+            }
+        });
 }

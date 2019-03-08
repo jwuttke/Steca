@@ -17,6 +17,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <functional>
 
 //! GUI dialog functions for opening files.
 
@@ -31,10 +32,12 @@ enum class eFileOverwritePolicy {
 void setFileOverwritePolicy(eFileOverwritePolicy);
 bool confirmOverwrite(const QString& name, QWidget* parent, const QString& path);
 QFile* openFileConfirmOverwrite(const QString&, QWidget*, const QString&);
-QStringList queryImportFileNames(QWidget*, const QString&, QDir&, const QString&, bool plural=true);
-QString queryImportFileName(QWidget*, const QString&, QDir&, const QString&);
-QString queryExportFileName(QWidget*, const QString&, QDir&, const QString&);
-QString queryDirectory(QWidget*, const QString&, const QString&);
+void queryImportFileNames(QWidget*, const QString&, QDir&, const QString&, bool plural,
+                          std::function<void(const QStringList)>);
+void queryExportFileName(QWidget*, const QString&, QDir&, const QString&,
+                         std::function<void(const QStringList)> postprocess);
+void queryDirectory(QWidget*, const QString&, const QString&,
+                    std::function<void(const QStringList)>);
 
 } // namespace file_dialog
 
