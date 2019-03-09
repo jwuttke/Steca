@@ -142,7 +142,7 @@ void queryImportFileNames(
     QWidget* parent, const QString& caption, QDir& dir, const QString& filter, bool plural,
     std::function<void(const QStringList)> postprocess)
 {
-    auto* dlg = new FileDialog(parent, caption, dir, filter, postprocess);
+    auto* dlg = new FileDialog{parent, caption, dir, filter, postprocess};
     dlg->setAcceptMode(QFileDialog::AcceptOpen);
     dlg->setReadOnly(true);
     dlg->setProxyModel(new OpenFileProxyModel);
@@ -167,10 +167,10 @@ void queryDirectory(QWidget* parent, const QString& caption, const QString& dirn
                        std::function<void(const QStringList)> postprocess)
 {
     QDir dir(dirname);
-    FileDialog dlg{parent, caption, dir, "", postprocess};
-    dlg.setFileMode(QFileDialog::Directory);
-    dlg.setAcceptMode(QFileDialog::AcceptSave);
-    dlg.open();
+    auto* dlg = new FileDialog{parent, caption, dir, "", postprocess};
+    dlg->setFileMode(QFileDialog::Directory);
+    dlg->setAcceptMode(QFileDialog::AcceptSave);
+    dlg->open();
 }
 
 } // namespace file_dialog
