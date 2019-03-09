@@ -44,6 +44,7 @@ public:
 
     void startingGui();
     void runScript(const QString& fName);
+    void openModalDialog(const QString& name, class QcrCommandable*);
     void closeModalDialog(const QString& name);
     void commandsFromStack();
 

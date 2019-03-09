@@ -191,17 +191,14 @@ Console::~Console()
 //! registry is reinstated.
 QString Console::learn(const QString& name, QcrCommandable* widget)
 {
-    if (name[0]=='@') {
-        const QStringList args = name.split(' ');
-        if (args[0]!="@push")
-            qFatal("invalid @ command in learn(%s)", CSTRI(name));
-        if (args.size()<2)
-            qFatal("@push has no argument in learn(%s)", CSTRI(name));
-        registryStack_.push(new CommandRegistry{args[1]});
-        //qDebug() << "pushed registry " << registry()->name();
-        return registry()->learn(args[1], widget);
-    }
     return registry()->learn(name, widget);
+}
+
+void Console::openModalDialog(const QString& name, QcrCommandable* widget)
+{
+    registryStack_.push(new CommandRegistry{name});
+    //qDebug() << "pushed registry " << registry()->name();
+    ASSERT(registry()->learn(name, widget)==name); // no reason to change name
 }
 
 //! Unregisters a QcrCommandable.
