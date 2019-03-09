@@ -15,7 +15,9 @@
 #include "qcr/base/debug.h" // CSTRI, ASSERT
 #include <regex>
 #include <iostream>
+#include <QEventLoop>
 #include <QString>
+#include <QTimer>
 
 namespace {
 
@@ -194,6 +196,13 @@ QString Console::learn(const QString& name, QcrCommandable* widget)
     return registry()->learn(name, widget);
 }
 
+//! Unregisters a QcrCommandable.
+void Console::forget(const QString& name)
+{
+    //qDebug() << "forget " << name;
+    registry()->forget(name);
+}
+
 void Console::openModalDialog(const QString& name, QcrCommandable* widget)
 {
     registryStack_.push(new CommandRegistry{name});
@@ -201,11 +210,28 @@ void Console::openModalDialog(const QString& name, QcrCommandable* widget)
     ASSERT(registry()->learn(name, widget)==name); // no reason to change name
 }
 
-//! Unregisters a QcrCommandable.
-void Console::forget(const QString& name)
+void Console::modalDialogBlocks(const QString& name, QDialog* dialog)
 {
-    //qDebug() << "forget " << name;
-    registry()->forget(name);
+    ASSERT(registry()->name()==name);
+    qDebug() << "blocking " << name;
+    blockingDialog_ = dialog;
+//    QDialog::connect(blockingDialog_, &QDialog::destroyed, [=](){ blockingDialog_ = nullptr; });
+    QDialog::connect(blockingDialog_, &QDialog::destroyed, [=](){ qDebug() << "Dialog destroyed"; });
+}
+
+//! Pops the current registry away, so that the previous one is reinstated.
+
+//! Called by ~QcrModal(), i.e. on terminating a modal dialog.
+void Console::closeModalDialog(const QString& name)
+{
+    ASSERT(!registryStack_.empty());
+    if (name != registryStack_.top()->name())
+        qFatal("invalid request to close registry %s while %s is on top",
+               CSTRI(name), CSTRI(registryStack_.top()->name()));
+    //qDebug() << "going to pop registry " << name;
+    delete registryStack_.top();
+    registryStack_.pop();
+    //qDebug() << "top registry is now " << name;
 }
 
 //! Sets calling context to GUI. To be called when initializations are done.
@@ -233,24 +259,21 @@ void Console::runScript(const QString& fName)
             qFatal("# ERROR: %s in script %s, line %i:\n'%s'",
                    CSTRI(ex.msg()), CSTRI(fName), iline+1, CSTRI(line));
         }
+        if (blockingDialog_) {
+            QTimer timer;
+            timer.setSingleShot(true);
+            QEventLoop loop;
+//            QObject::connect(blockingDialog_, &QDialog::destroyed, [p=&loop](){p->quit();});
+            QObject::connect(&timer,          &QTimer::timeout,    [p=&loop](){p->quit();});
+            timer.start(3000); // timeout in ms
+            loop.exec();
+            if(!timer.isActive())
+                qFatal("blocking dialog not destroyed, reached timeout");
+            qDebug("dialog properly destroyed, blocking lifted");
+        }
     }
     log("# done with script '" + fName + "'");
     caller_ = "gui"; // restores default
-}
-
-//! Pops the current registry away, so that the previous one is reinstated.
-
-//! Called by ~QcrModal(), i.e. on terminating a modal dialog.
-void Console::closeModalDialog(const QString& name)
-{
-    ASSERT(!registryStack_.empty());
-    if (name != registryStack_.top()->name())
-        qFatal("invalid request to close registry %s while %s is on top",
-               CSTRI(name), CSTRI(registryStack_.top()->name()));
-    //qDebug() << "going to pop registry " << name;
-    delete registryStack_.top();
-    registryStack_.pop();
-    //qDebug() << "top registry is now " << name;
 }
 
 //! Writes line to log file, decorated with information on context and timing.

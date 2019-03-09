@@ -22,12 +22,15 @@
 //! @class QcrModal
 
 QcrModal::QcrModal(const QString& name)
-    : QcrCommandable {gConsole->learn("@push " + name,this)}
-{}
+    : QcrCommandable {name}
+{
+}
 
 QcrModal::~QcrModal()
 {
     ASSERT(preclosed_);
+    gConsole->forget(name());
+    gConsole->closeModalDialog(name());
 }
 
 //! @brief To be called when `*this` closes.
@@ -49,8 +52,6 @@ void QcrModal::preclose(int result)
 {
     ASSERT(!preclosed_);
     gConsole->log(name() + " " + (result==QDialog::Accepted ? "accept" : "cancel"));
-    gConsole->forget(name());
-    gConsole->closeModalDialog(name());
     preclosed_ = true;
 }
 
@@ -62,12 +63,14 @@ QcrModalDialog::QcrModalDialog(QWidget* parent, const QString& caption)
     : QcrModal{"modal"}
     , QDialog {parent}
 {
+    gConsole->openModalDialog(name(),this);
     setWindowTitle(caption);
     setModal(true);
     setAttribute(Qt::WA_DeleteOnClose, true);
     connect(this, &QcrFileDialog::finished, this,
             [this](){
                 preclose(result());
+                gConsole->modalDialogBlocks(name(),this);
                 close();
             });
 }
@@ -94,12 +97,14 @@ QcrFileDialog::QcrFileDialog(
     : QcrModal{"fdia"}
     , QFileDialog{parent, caption, directory, filter}
 {
+    gConsole->openModalDialog(name(),this);
     setAttribute(Qt::WA_DeleteOnClose, true);
     connect(this, &QcrFileDialog::finished, this,
             [this,postprocess](){
                 if (result()==Accepted)
                     postprocess(this->selectedFiles());
                 preclose(result());
+                gConsole->modalDialogBlocks(name(),this);
                 close();
             });
     connect(this, &QcrFileDialog::filesSelected, this,
