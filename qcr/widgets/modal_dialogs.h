@@ -25,7 +25,7 @@ protected:
     ~QcrModal();
     void preclose(int result);
 private:
-    bool preclosed_ {false};
+    bool preclosed_ {false}; //!< Helps asserting that `preclose` is called at the right time.
 };
 
 //! Dialog, for modal use.

@@ -30,6 +30,21 @@ QcrModal::~QcrModal()
     ASSERT(preclosed_);
 }
 
+//! @brief To be called when `*this` closes.
+//! Logs `accept` or `cancel` events. Removes `*this` from Console registry.
+
+//! In an ideal world, the cleanup functionality of `preclose` would be implemented in
+//! the destructor `~QcrModal`. However, that destructor is not immediately called upon
+//! `close`. Rather, `close` seems to call `deleteLater` which returns control to the
+//! main event loop from where ultimately the destructor is called (see also
+//! https://stackoverflow.com/questions/55068425). This delay is incompatible with
+//! replay mode: the replay engine would attempt to execute the next main window command,
+//! and fail, because QcrModal has not yet removed itself from the top of the command registry.
+//!
+//! Therefore, it is imperative that `preclose` be called as soon as there is an `accept`
+//! or `reject` event. To detect violations of this rule, there are assertions on the
+//! boolean variable `preclosed_`.
+
 void QcrModal::preclose(int result)
 {
     ASSERT(!preclosed_);
