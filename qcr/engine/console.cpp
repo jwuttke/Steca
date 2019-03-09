@@ -200,14 +200,14 @@ QString Console::learn(const QString& nameArg, QcrCommandable* widget)
         registryStack_.push(new CommandRegistry{name});
         //qDebug() << "pushed registry " << registryStack_.top()->name();
     }
-    return registry().learn(name, widget);
+    return registry()->learn(name, widget);
 }
 
 //! Unregisters a QcrCommandable.
 void Console::forget(const QString& name)
 {
     //qDebug() << "forget " << name;
-    registry().forget(name);
+    registry()->forget(name);
 }
 
 //! Sets calling context to GUI. To be called when initializations are done.
@@ -240,11 +240,12 @@ void Console::runScript(const QString& fName)
         commandLifo.push_back(line);
     }
 
+    caller_ = "fil";
     while (!commandLifo.empty()) {
         const QString line = commandLifo.front();
         commandLifo.pop_front();
         try {
-            commandInContext(line, "fil");
+            wrappedCommand(line);
         } catch (const QcrException&ex) {
             qterr << ex.msg() << "\n";
             qterr.flush();
@@ -255,6 +256,7 @@ void Console::runScript(const QString& fName)
         }
     }
     log("# done with script '" + fName + "'");
+    caller_ = "gui"; // restores default
 }
 
 //! Pops the current registry away, so that the previous one is reinstated.
@@ -262,11 +264,10 @@ void Console::runScript(const QString& fName)
 //! Called by ~QcrModal(), i.e. on terminating a modal dialog.
 void Console::closeModalDialog(const QString& name)
 {
+    ASSERT(!registryStack_.empty());
     if (name != registryStack_.top()->name())
         qFatal("invalid request to close registry %s while %s is on top",
                CSTRI(name), CSTRI(registryStack_.top()->name()));
-    if (registryStack_.empty())
-        qFatal("BUG: cannot pop: registry stack is empty");
     //qDebug() << "going to pop registry " << name;
     delete registryStack_.top();
     registryStack_.pop();
@@ -288,7 +289,7 @@ void Console::log(const QString& lineArg) const
         prefix += QString::number(tDiff).rightJustified(5) + "ms";
         computingTime_ += tDiff;
     }
-    prefix += " " + registry().name() + " " + caller_ + "] ";
+    prefix += " " + registry()->name() + " " + caller_ + "] ";
     log_ << prefix << line << "\n";
     log_.flush();
     // also write to terminal ?
@@ -303,18 +304,12 @@ void Console::readCLI()
     QTextStream qtin(stdin);
     QString line = qtin.readLine();
     try {
-        commandInContext(line, "cli");
+        caller_ = "cli";
+        wrappedCommand(line);
     } catch (const QcrException&ex) {
         qterr << ex.msg() << "\n";
         qterr.flush();
     }
-}
-
-//! Delegates command execution to wrappedCommand, with context set to caller argument.
-void Console::commandInContext(const QString& line, const QString& caller)
-{
-    caller_ = caller;
-    wrappedCommand(line);
     caller_ = "gui"; // restores default
 }
 
@@ -339,7 +334,7 @@ void Console::wrappedCommand(const QString& line)
         qterr.flush();
         return;
     }
-    QcrCommandable* w = registry().find(cmd);
+    QcrCommandable* w = registry()->find(cmd);
     if (!w)
         throw QcrException{"Command '"+cmd+"' not found"};
     try {
