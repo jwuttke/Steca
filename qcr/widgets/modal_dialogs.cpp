@@ -27,8 +27,22 @@ QcrModal::QcrModal(const QString& name)
 
 QcrModal::~QcrModal()
 {
+    qDebug() << "/~QcrModal";
+    preclose();
+    qDebug() << "~QcrModal/";
+}
+
+void QcrModal::preclose()
+{
+    qDebug() << "/preclose";
+    if (preclosed_)
+        return;
+    qDebug() << "preclose calling forget";
     gConsole->forget(name());
+    qDebug() << "preclose calling cMD";
     gConsole->closeModalDialog(name());
+    preclosed_ = true;
+    qDebug() << "preclose/";
 }
 
 
@@ -67,10 +81,13 @@ QcrFileDialog::QcrFileDialog(
     setAttribute(Qt::WA_DeleteOnClose, true);
     connect(this, &QcrFileDialog::finished, this,
             [this,postprocess](){
-                if (result()==Accepted)
+                if (result()==Accepted) {
+                qDebug() << "FileDialog calling /postprocess";
                     postprocess(this->selectedFiles());
+                qDebug() << "FileDialog calling postprocess/";
+                }
                 qDebug() << "FileDialog calling /close";
-                gConsole->closeModalDialog(name());
+                preclose();
                 close();
                 qDebug() << "FileDialog calling close/";
             });
@@ -86,7 +103,9 @@ void QcrFileDialog::setFromCommand(const QString& arg)
     if (arg=="")
         throw QcrException{"Empty argument in FileDialog command"};
     if (arg=="close") {
+        qDebug() << "FileDialog /close->accept";
         accept(); // will emit signal finished(), which triggers postprocess and close
+        qDebug() << "FileDialog close->accept/";
         return;
     }
     QStringList args = arg.split(' ');

@@ -23,6 +23,9 @@ class QcrModal : public QcrCommandable {
 protected:
     QcrModal(const QString& name);
     ~QcrModal();
+    void preclose();
+private:
+    bool preclosed_ {false};
 };
 
 //! Dialog, for modal use.
