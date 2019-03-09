@@ -108,7 +108,7 @@ QString CommandRegistry::learn(const QString& name, QcrCommandable* widget)
 
 void CommandRegistry::forget(const QString& name)
 {
-    qDebug() << "Registry " << name_ << "(" << widgets_.size() << ") forgets '"  << name << "'";
+    //qDebug() << "Registry " << name_ << "(" << widgets_.size() << ") forgets '"  << name << "'";
     auto it = widgets_.find(name);
     if (it==widgets_.end())
         qFatal("Cannot deregister, there is no entry '%s' in the widget registry '%s'",
@@ -198,7 +198,7 @@ QString Console::learn(const QString& nameArg, QcrCommandable* widget)
             qFatal("@push has no argument in learn(%s)", CSTRI(name));
         name = args[1];
         registryStack_.push(new CommandRegistry{name});
-        qDebug() << "pushed registry " << registryStack_.top()->name();
+        //qDebug() << "pushed registry " << registryStack_.top()->name();
     }
     return registry().learn(name, widget);
 }
@@ -206,7 +206,7 @@ QString Console::learn(const QString& nameArg, QcrCommandable* widget)
 //! Unregisters a QcrCommandable.
 void Console::forget(const QString& name)
 {
-    qDebug() << "forget " << name;
+    //qDebug() << "forget " << name;
     registry().forget(name);
 }
 
@@ -242,7 +242,6 @@ void Console::runScript(const QString& fName)
 
     while (!commandLifo.empty()) {
         const QString line = commandLifo.front();
-        qDebug() << "/from stack '" << line;
         commandLifo.pop_front();
         try {
             commandInContext(line, "fil");
@@ -254,7 +253,6 @@ void Console::runScript(const QString& fName)
             log("# Emptied command stack upon error");
             break;
         }
-        qDebug() << "from stack/ '" << line << "'\n";
     }
     log("# done with script '" + fName + "'");
 }
@@ -270,10 +268,10 @@ void Console::closeModalDialog(const QString& name)
     log(name + " close");
     if (registryStack_.empty())
         qFatal("BUG: cannot pop: registry stack is empty");
-    qDebug() << "going to pop registry " << name;
+    //qDebug() << "going to pop registry " << name;
     delete registryStack_.top();
     registryStack_.pop();
-    qDebug() << "top registry is now " << name;
+    //qDebug() << "top registry is now " << name;
 }
 
 //! Writes line to log file, decorated with information on context and timing.
@@ -305,7 +303,6 @@ void Console::readCLI()
 {
     QTextStream qtin(stdin);
     QString line = qtin.readLine();
-    qDebug() << "readCLI: " << line;
     try {
         commandInContext(line, "cli");
     } catch (const QcrException&ex) {
@@ -317,11 +314,9 @@ void Console::readCLI()
 //! Delegates command execution to wrappedCommand, with context set to caller argument.
 void Console::commandInContext(const QString& line, const QString& caller)
 {
-    qDebug() << "/in context '" << line << "', caller=" << caller;
     caller_ = caller;
     wrappedCommand(line);
     caller_ = "gui"; // restores default
-    qDebug() << "in context/ '" << line << "', caller=" << caller;
 }
 
 //! Executes command. Always called from commandInContext(..).
@@ -338,7 +333,6 @@ void Console::wrappedCommand(const QString& line)
         return;
     QString cmd, arg;
     strOp::splitOnce(command, cmd, arg);
-    qDebug() << "/wrapped '" << line;
     if (cmd=="@ls") {
         const CommandRegistry* reg = registryStack_.top();
         qterr << "registry " << reg->name() << " has " << reg->size() << " commands:\n";
@@ -354,7 +348,6 @@ void Console::wrappedCommand(const QString& line)
     } catch (const QcrException&ex) {
         throw QcrException{"Command '"+cmd+"' failed: "+ex.msg()};
     }
-    qDebug() << "wrapped/ '" << line << "'";
 }
 
 #endif // LOCAL_CODE_ONLY
