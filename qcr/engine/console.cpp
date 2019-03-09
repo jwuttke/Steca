@@ -265,7 +265,6 @@ void Console::closeModalDialog(const QString& name)
     if (name != registryStack_.top()->name())
         qFatal("invalid request to close registry %s while %s is on top",
                CSTRI(name), CSTRI(registryStack_.top()->name()));
-    log(name + " close");
     if (registryStack_.empty())
         qFatal("BUG: cannot pop: registry stack is empty");
     //qDebug() << "going to pop registry " << name;

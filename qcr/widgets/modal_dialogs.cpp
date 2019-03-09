@@ -27,13 +27,13 @@ QcrModal::QcrModal(const QString& name)
 
 QcrModal::~QcrModal()
 {
-    preclose();
+    ASSERT(preclosed_);
 }
 
-void QcrModal::preclose()
+void QcrModal::preclose(int result)
 {
-    if (preclosed_)
-        return;
+    ASSERT(!preclosed_);
+    gConsole->log(name() + " " + (result==QDialog::Accepted ? "accept" : "cancel"));
     gConsole->forget(name());
     gConsole->closeModalDialog(name());
     preclosed_ = true;
@@ -77,30 +77,30 @@ QcrFileDialog::QcrFileDialog(
             [this,postprocess](){
                 if (result()==Accepted)
                     postprocess(this->selectedFiles());
-                preclose();
+                preclose(result());
                 close();
             });
-}
-
-QcrFileDialog::~QcrFileDialog()
-{
-    gConsole->log("fdia select "+selectedFiles().join(';'));
+    connect(this, &QcrFileDialog::filesSelected, this,
+            [this](const QStringList& selected){
+                gConsole->log("fdia select "+selectedFiles().join(';')); });
 }
 
 void QcrFileDialog::setFromCommand(const QString& arg)
 {
     if (arg=="")
         throw QcrException{"Empty argument in FileDialog command"};
-    if (arg=="close") {
-        accept(); // will emit signal finished(), which triggers postprocess and close
-        return;
-    }
     QStringList args = arg.split(' ');
-    if (args[0]!="select")
-        throw QcrException{"Unexpected filedialog command"};
-    if (args.size()<2)
-        throw QcrException{"Missing argument to command 'select'"};
-    QStringList list = args[1].split(';');
-    QString tmp = '"' + list.join("\" \"") + '"';
-    selectFile(tmp);
+    QString cmd = args[0];
+    if      (cmd=="accept")
+        accept(); // will emit signal finished(), which triggers postprocess and close
+    else if (cmd=="cancel")
+        reject();
+    else if (cmd=="select") {
+        if (args.size()<2)
+            throw QcrException{"Missing argument to command 'select'"};
+        QStringList list = args[1].split(';');
+        QString tmp = '"' + list.join("\" \"") + '"';
+        selectFile(tmp);
+    } else
+        throw QcrException{"Unexpected filedialog command "+arg};
 }

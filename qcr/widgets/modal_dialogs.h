@@ -23,7 +23,7 @@ class QcrModal : public QcrCommandable {
 protected:
     QcrModal(const QString& name);
     ~QcrModal();
-    void preclose();
+    void preclose(int result);
 private:
     bool preclosed_ {false};
 };
@@ -40,7 +40,6 @@ class QcrFileDialog : protected QcrModal, public QFileDialog {
 public:
     QcrFileDialog(QWidget* parent, const QString& caption, const QString& directory,
                   const QString& filter, std::function<void(const QStringList)> postprocess);
-    ~QcrFileDialog();
     void setFromCommand(const QString&) override;
 };
 
