@@ -189,18 +189,17 @@ Console::~Console()
 //! This is used by the QcrModal modal dialogs. On terminating, QcrModal calls
 //! closeModalDialog(), which pops the current registry away, so that the previous
 //! registry is reinstated.
-QString Console::learn(const QString& nameArg, QcrCommandable* widget)
+QString Console::learn(const QString& name, QcrCommandable* widget)
 {
-    QString name = nameArg;
     if (name[0]=='@') {
-        QStringList args = name.split(' ');
+        const QStringList args = name.split(' ');
         if (args[0]!="@push")
             qFatal("invalid @ command in learn(%s)", CSTRI(name));
         if (args.size()<2)
             qFatal("@push has no argument in learn(%s)", CSTRI(name));
-        name = args[1];
-        registryStack_.push(new CommandRegistry{name});
-        //qDebug() << "pushed registry " << registryStack_.top()->name();
+        registryStack_.push(new CommandRegistry{args[1]});
+        //qDebug() << "pushed registry " << registry()->name();
+        return registry()->learn(args[1], widget);
     }
     return registry()->learn(name, widget);
 }
@@ -230,11 +229,11 @@ void Console::runScript(const QString& fName)
 
     QTextStream in(&file);
     for (int iline=0; !in.atEnd(); ++iline) {
-        QString line = in.readLine();
+        const QString line = in.readLine();
         try {
             wrappedCommand(line);
         } catch (const QcrException&ex) {
-            qFatal("# ERROR: %s in script %s, line %i '%s'",
+            qFatal("# ERROR: %s in script %s, line %i:\n'%s'",
                    CSTRI(ex.msg()), CSTRI(fName), iline+1, CSTRI(line));
         }
     }
@@ -258,9 +257,8 @@ void Console::closeModalDialog(const QString& name)
 }
 
 //! Writes line to log file, decorated with information on context and timing.
-void Console::log(const QString& lineArg) const
+void Console::log(const QString& line) const
 {
-    QString line = lineArg;
     static auto lastTime = startTime_;
     const auto currTime = QDateTime::currentDateTime();
     int tDiff = lastTime.msecsTo(currTime);
@@ -284,8 +282,8 @@ void Console::log(const QString& lineArg) const
 //! Reads one line from the command-line interface, and executes it.
 void Console::readCLI()
 {
-    QTextStream qtin(stdin);
-    QString line = qtin.readLine();
+    static QTextStream qtin(stdin);
+    const QString line = qtin.readLine();
     try {
         caller_ = "cli";
         wrappedCommand(line);
