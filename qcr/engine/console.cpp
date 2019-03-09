@@ -65,6 +65,7 @@ Console* gConsole; //!< global
 
 QTextStream qterr(stderr);
 
+
 //  ***********************************************************************************************
 //! @class CommandRegistry
 
@@ -89,7 +90,7 @@ private:
 QString CommandRegistry::learn(const QString& name, QcrCommandable* widget)
 {
     ASSERT(name!=""); // empty name only allowed for non-settable QcrBase
-    // qterr << "Registry " << name_ << " learns '" << name << "'\n"; qterr.flush();
+    // qDebug() << "Registry " << name_ << " learns '" << name;
     QString ret = name;
     if (ret.contains("#")) {
         auto numberedEntry = numberedEntries_.find(name);
@@ -130,6 +131,7 @@ void CommandRegistry::dump(QTextStream& stream) const
         stream << " " << it.first;
     stream << "\n";
 }
+
 
 //  ***********************************************************************************************
 //! @class Console
@@ -219,40 +221,21 @@ void Console::startingGui()
 //! Reads and executes a command script.
 void Console::runScript(const QString& fName)
 {
+    caller_ = "fil";
+
     QFile file(fName);
     log("# running script '" + fName + "'");
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "Cannot open file " << fName;
-        return;
-    }
-    QTextStream in(&file);
-    std::deque<QString> commandLifo;
-    while (!in.atEnd()) {
-        QString line = in.readLine();
-        if (line[0]=='[') {
-            int i = line.indexOf(']');
-            if (i==-1) {
-                qterr << "unbalanced '['\n"; qterr.flush();
-                return;
-            }
-            line = line.mid(i+1);
-        }
-        commandLifo.push_back(line);
-    }
+    if (!file.open(QIODevice::ReadOnly))
+        qFatal("Cannot open script file %s", CSTRI(fName));
 
-    caller_ = "fil";
-    while (!commandLifo.empty()) {
-        const QString line = commandLifo.front();
-        commandLifo.pop_front();
+    QTextStream in(&file);
+    for (int iline=0; !in.atEnd(); ++iline) {
+        QString line = in.readLine();
         try {
             wrappedCommand(line);
         } catch (const QcrException&ex) {
-            qterr << ex.msg() << "\n";
-            qterr.flush();
-            commandLifo.clear();
-            log("# ERROR: " + ex.msg());
-            log("# Emptied command stack upon error");
-            break;
+            qFatal("# ERROR: %s in script %s, line %i '%s'",
+                   CSTRI(ex.msg()), CSTRI(fName), iline+1, CSTRI(line));
         }
     }
     log("# done with script '" + fName + "'");
