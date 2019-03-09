@@ -65,16 +65,23 @@ QcrModalDialog::QcrModalDialog(QWidget* parent, const QString& caption)
     setWindowTitle(caption);
     setModal(true);
     setAttribute(Qt::WA_DeleteOnClose, true);
+    connect(this, &QcrFileDialog::finished, this,
+            [this](){
+                preclose(result());
+                close();
+            });
 }
 
 void QcrModalDialog::setFromCommand(const QString& arg)
 {
     if (arg=="")
         throw QcrException{"Empty argument in Dialog command"};
-    if (arg=="close") {
-        accept();
-        return;
-    }
+    if      (arg=="accept")
+        accept(); // will emit signal finished(), which triggers postprocess and close
+    else if (arg=="cancel")
+        reject();
+    else
+        throw QcrException{"Unexpected dialog command "+arg};
 }
 
 
