@@ -16,6 +16,8 @@
 #include "qcr/base/debug.h"
 #include "qcr/base/qcrexception.h"
 #include "qcr/engine/console.h"
+#include <QEventLoop>
+#include <QTimer>
 
 
 //  ***********************************************************************************************
@@ -48,7 +50,7 @@ QcrModal::~QcrModal()
 //! or `reject` event. To detect violations of this rule, there are assertions on the
 //! boolean variable `preclosed_`.
 
-void QcrModal::preclose(int result)
+void QcrModal::preclose(int result, QDialog* dialog)
 {
     ASSERT(!preclosed_);
     gConsole->log(name() + " " + (result==QDialog::Accepted ? "accept" : "cancel"));
@@ -69,8 +71,7 @@ QcrModalDialog::QcrModalDialog(QWidget* parent, const QString& caption)
     setAttribute(Qt::WA_DeleteOnClose, true);
     connect(this, &QcrFileDialog::finished, this,
             [this](){
-                preclose(result());
-                gConsole->modalDialogBlocks(name(),this);
+                preclose(result(), this);
                 close();
             });
 }
@@ -103,8 +104,7 @@ QcrFileDialog::QcrFileDialog(
             [this,postprocess](){
                 if (result()==Accepted)
                     postprocess(this->selectedFiles());
-                preclose(result());
-                gConsole->modalDialogBlocks(name(),this);
+                preclose(result(), this);
                 close();
             });
     connect(this, &QcrFileDialog::filesSelected, this,

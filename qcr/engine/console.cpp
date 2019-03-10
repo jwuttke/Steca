@@ -15,9 +15,7 @@
 #include "qcr/base/debug.h" // CSTRI, ASSERT
 #include <regex>
 #include <iostream>
-#include <QEventLoop>
 #include <QString>
-#include <QTimer>
 
 namespace {
 
@@ -210,15 +208,6 @@ void Console::openModalDialog(const QString& name, QcrCommandable* widget)
     ASSERT(registry()->learn(name, widget)==name); // no reason to change name
 }
 
-void Console::modalDialogBlocks(const QString& name, QDialog* dialog)
-{
-    ASSERT(registry()->name()==name);
-    qDebug() << "blocking " << name;
-    blockingDialog_ = dialog;
-//    QDialog::connect(blockingDialog_, &QDialog::destroyed, [=](){ blockingDialog_ = nullptr; });
-    QDialog::connect(blockingDialog_, &QDialog::destroyed, [=](){ qDebug() << "Dialog destroyed"; });
-}
-
 //! Pops the current registry away, so that the previous one is reinstated.
 
 //! Called by ~QcrModal(), i.e. on terminating a modal dialog.
@@ -258,18 +247,6 @@ void Console::runScript(const QString& fName)
         } catch (const QcrException&ex) {
             qFatal("# ERROR: %s in script %s, line %i:\n'%s'",
                    CSTRI(ex.msg()), CSTRI(fName), iline+1, CSTRI(line));
-        }
-        if (blockingDialog_) {
-            QTimer timer;
-            timer.setSingleShot(true);
-            QEventLoop loop;
-//            QObject::connect(blockingDialog_, &QDialog::destroyed, [p=&loop](){p->quit();});
-            QObject::connect(&timer,          &QTimer::timeout,    [p=&loop](){p->quit();});
-            timer.start(3000); // timeout in ms
-            loop.exec();
-            if(!timer.isActive())
-                qFatal("blocking dialog not destroyed, reached timeout");
-            qDebug("dialog properly destroyed, blocking lifted");
         }
     }
     log("# done with script '" + fName + "'");

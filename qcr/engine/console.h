@@ -44,7 +44,6 @@ public:
 
     void openModalDialog(const QString& name, class QcrCommandable*);
     void closeModalDialog(const QString& name);
-    void modalDialogBlocks(const QString& name, class QDialog* widget);
 
     void startingGui();
     void runScript(const QString& fName);
@@ -57,7 +56,6 @@ private:
     std::stack<class CommandRegistry*> registryStack_;
     mutable int computingTime_ {0}; //!< Accumulated computing time in ms.
     mutable QTextStream log_;
-    QDialog* blockingDialog_ {nullptr};
 
     class CommandRegistry* registry() const { return registryStack_.top(); }
     void readCLI();

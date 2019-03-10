@@ -23,7 +23,7 @@ class QcrModal : public QcrCommandable {
 protected:
     QcrModal(const QString& name);
     ~QcrModal();
-    void preclose(int result);
+    void preclose(int result, QDialog*);
 private:
     bool preclosed_ {false}; //!< Helps asserting that `preclose` is called at the right time.
 };
