@@ -16,8 +16,6 @@
 #include "qcr/base/debug.h"
 #include "qcr/base/qcrexception.h"
 #include "qcr/engine/console.h"
-#include <QEventLoop>
-#include <QTimer>
 
 
 //  ***********************************************************************************************

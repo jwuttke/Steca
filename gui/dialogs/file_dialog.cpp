@@ -20,6 +20,8 @@
 #include <QFileSystemModel>
 #include <QMessageBox>
 #include <QSortFilterProxyModel>
+#include <QEventLoop>
+#include <QTimer>
 
 namespace {
 
@@ -148,18 +150,13 @@ void queryImportFileNames(
     dlg->setProxyModel(new OpenFileProxyModel);
     dlg->setFileMode(plural ? QFileDialog::ExistingFiles : QFileDialog::ExistingFile);
 
-    QTimer timer;
-    timer.setSingleShot(true);
     QEventLoop loop;
-    QObject::connect(dialog, &QDialog::destroyed, [p=&loop](){p->quit();});
-    QObject::connect(&timer, &QTimer::timeout,    [p=&loop](){p->quit();});
-    timer.start(3000); // timeout in ms
-    loop.exec();
-    if(!timer.isActive())
-        qFatal("blocking dialog not destroyed, reached timeout");
-    qDebug("dialog properly destroyed, blocking lifted");
+    QObject::connect(dlg, &QDialog::destroyed, [p=&loop](){p->quit();});
 
     dlg->open();
+
+    loop.exec();
+    qDebug("dialog properly destroyed");
 }
 
 //! Runs dialog that prompts for one output file. Returns absolute path. May change dir.
